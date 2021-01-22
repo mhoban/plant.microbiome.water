@@ -1,5 +1,7 @@
 library(tidyverse)
 library(lubridate)
+library(ggplot2)
+library(patchwork)
 ###################
 ###################
 # plot the data
@@ -31,44 +33,48 @@ logger_data <- logger_data %>%
   # because Date is a function in lubridate and it thinks you're trying to do something
   # with that rather than using it as the name of a field in a dataframe
 
-# all the code below here is as you left it. like I said there are probably a 
-# whole bunch of clever ways to do this in ggplot, but if it works, who needs it?
-# the only thing I changed was the name of the dataframe. 
+
+# ok I went a head and ggplotified this. It's all standard ggplot code
+# except for the last bit (p1 + p2 + p3). That uses patchwork, which allows
+# for very clever and simple plot layout
 
 # plot it
-par(mfrow=c(1,3))
 
-####chamber 1
-plot(top1.Temp~ Date, logger_data, type="n", ylab="Temperature (°C)", ylim=c(15, 35), yaxt="n", xaxt="n", 
-     xlab="Date", cex.lab=0.7, cex.axis=0.7, main="chamber 1")
-#top-chamber1
-lines(logger_data$top1.Temp~logger_data$Date, lwd=.6, lty=1, col="dodgerblue")
-#bot-logger_data
-lines(logger_data$bot1.Temp~logger_data$Date, lwd=.6, lty=1, col="mediumseagreen")
-axis(side=2, at=c(0, 10, 20, 30), cex.lab=0.7, cex.axis=0.7)
-legend("topright", legend=c("top", "bottom"),
-       col=c("dodgerblue", "mediumseagreen"), cex=0.6, lty =1, box.lty=0, lwd=2)
-axis.Date(1, at=seq(min(logger_data$Date), max(logger_data$Date), by="2 month"), format="%b '%y", cex.lab=0.7, cex.axis=0.7)
+# chamber 1
+p1 <- ggplot(logger_data) + 
+  geom_line(aes(x = Date, y = top1.Temp),col="dodgerblue") +
+  geom_line(aes(x = Date, y = bot1.Temp), col = "mediumseagreen") +
+  xlab("Date") + 
+  ylab("Temperature (ªC)") +
+  ggtitle("Chamber 1")
 
 ####chamber 2
-plot(top2.Temp~ Date, logger_data, type="n", ylab="", ylim=c(15, 35), yaxt="n", xaxt="n", 
-     xlab="Date", cex.lab=0.7, cex.axis=0.7, main="chamber 2")
-#top-chamber2
-lines(logger_data$top2.Temp~logger_data$Date, lwd=.6, lty=1, col="dodgerblue")
-#bot-chamber2
-lines(logger_data$bot2.Temp~logger_data$Date, lwd=.6, lty=1, col="mediumseagreen")
-axis(side=2, at=c(0, 10, 20, 30), cex.lab=0.7, cex.axis=0.7)
-axis.Date(1, at=seq(min(logger_data$Date), max(logger_data$Date), by="2 month"), format="%b '%y", cex.lab=0.7, cex.axis=0.7)
+p2 <- ggplot(logger_data) + 
+  geom_line(aes(x = Date, y = top2.Temp),col="dodgerblue") +
+  geom_line(aes(x = Date, y = bot2.Temp), col = "mediumseagreen") +
+  xlab("Date") + 
+  ylab("Temperature (ªC)") +
+  ggtitle("Chamber 2")
 
 ####chamber 3
-plot(top3.Temp~ Date, logger_data, type="n", ylab="", ylim=c(15, 35), yaxt="n", xaxt="n", 
-     xlab="Date", cex.lab=0.7, cex.axis=0.7, main="chamber 3")
-#top-chamber3
-lines(logger_data$top3.Temp~logger_data$Date, lwd=.6, lty=1, col="dodgerblue")
-#bot-chamber3
-lines(logger_data$bot3.Temp~logger_data$Date, lwd=.6, lty=1, col="mediumseagreen")
-axis(side=2, at=c(0, 10, 20, 30), cex.lab=0.7, cex.axis=0.7)
-axis.Date(1, at=seq(min(logger_data$Date), max(logger_data$Date), by="2 month"), format="%b '%y", cex.lab=0.7, cex.axis=0.7)
+p3 <- ggplot(logger_data) + 
+  geom_line(aes(x = Date, y = top3.Temp),col="dodgerblue") +
+  geom_line(aes(x = Date, y = bot3.Temp), col = "mediumseagreen") +
+  xlab("Date") + 
+  ylab("Temperature (ªC)") +
+  ggtitle("Chamber 3")
 
-dev.copy(pdf, "hobo loggers/output/tempoutput.pdf", height=4, width=8)
-dev.off()
+# put 'em all together
+# this uses the magic of patchwork to layout the plots
+# this will put them all side by side, like you had it
+p1 + p2 + p3
+
+# just to show off how great and easy patchwork is, this will
+# put chambers 1 & 2 on top, with chamber 3 on the bottom
+(p1 + p2) / p3
+
+# here are some other things you can do with it:
+(p1 / p2) | p3
+p1 | (p2 / p3)
+
+# magic!
