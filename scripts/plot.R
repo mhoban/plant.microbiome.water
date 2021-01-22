@@ -76,5 +76,7 @@ p1 + p2 + p3
 # here are some other things you can do with it:
 (p1 / p2) | p3
 p1 | (p2 / p3)
+p1 / p2 / p3
+p1 / (p2 + p3)
 
 # magic!
