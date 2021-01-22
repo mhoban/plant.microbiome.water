@@ -8,23 +8,32 @@ logger_data <- read_csv(here::here("hobo loggers","output","logger_data.csv"), l
 # I did all the same renaming you did so your plotting code would work
 logger_data <- logger_data %>% 
   mutate(Date = date(datetime)) %>%
-  rename(
-    timestamp = datetime,
-    bot1.Temp = temp_logger_20940476,
-    bot1.Light = light_logger_20940476,
-    top2.Temp = temp_logger_20940477,
-    top2.Light = light_logger_20940477,
-    bot3.Temp = temp_logger_20940478,
-    bot3.Light = light_logger_20940478,
-    bot2.Temp = temp_logger_20940479,
-    bot2.Light = light_logger_20940479,
-    top1.Temp = temp_logger_20940480,
-    top1.Light = light_logger_20940480,
-    top3.Temp = temp_logger_20940481,
-    top3.Light = light_logger_20940481
-  ) %>%
-  select(`Date`,`timestamp`,top1.Temp,bot1.Temp,top2.Temp,,bot2.Temp,top3.Temp,bot3.Temp)
+  # all of this is commented out because the data should already be named
+  # what you want it to be named. 
+  # rename(
+  #   timestamp = datetime,
+  #   bot1.Temp = temp_logger_20940476,
+  #   bot1.Light = light_logger_20940476,
+  #   top2.Temp = temp_logger_20940477,
+  #   top2.Light = light_logger_20940477,
+  #   bot3.Temp = temp_logger_20940478,
+  #   bot3.Light = light_logger_20940478,
+  #   bot2.Temp = temp_logger_20940479,
+  #   bot2.Light = light_logger_20940479,
+  #   top1.Temp = temp_logger_20940480,
+  #   top1.Light = light_logger_20940480,
+  #   top3.Temp = temp_logger_20940481,
+  #   top3.Light = light_logger_20940481
+  # ) %>%
+  # we still do this though:
+  select(Date,timestamp=datetime,top1.Temp,bot1.Temp,top2.Temp,,bot2.Temp,top3.Temp,bot3.Temp)
+  # rstudio shows a little yellow warning triangle in the gutter over to the left
+  # because Date is a function in lubridate and it thinks you're trying to do something
+  # with that rather than using it as the name of a field in a dataframe
 
+# all the code below here is as you left it. like I said there are probably a 
+# whole bunch of clever ways to do this in ggplot, but if it works, who needs it?
+# the only thing I changed was the name of the dataframe. 
 
 # plot it
 par(mfrow=c(1,3))

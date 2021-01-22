@@ -22,11 +22,16 @@ csv_files <- dir_ls(here::here("data"),glob='*.csv',recurse=TRUE)
 loggers <- map_dfr(csv_files,function(csv) {
   # first let's pull out the logger ID from the filename
   # these path_* files come from the library fs
-  logger_id <- path_ext_remove(path_file(csv))
-  if (str_detect(logger_id,"^([^_]+)_")) {
+  logger_file <- path_ext_remove(path_file(csv))
+  if (str_detect(logger_file,"^([^_]+)_([^_]+)")) {
     # using a regular expression, we pull out the first set of characters
-    # that aren't underscores
-    logger_id <- str_match(logger_id,"^([^_]+)_")[1,2]
+    # that aren't underscores. str_detect returns a matrix of matches
+    # and capture groups (the patterns in parentheses). regexes are a 
+    # huge topic, but I briefly described this in the comments in
+    # the code I gave to Shayle
+    match <- str_match(logger_file,"^([^_]+)_([^_]+)")
+    logger_id <- match[1,2]
+    logger_name <- match[1,3]
   } else {
     # if the filename doesn't look like xxx_xxx.csv, bail out 
     # because we can't do anything with it
@@ -55,7 +60,8 @@ loggers <- map_dfr(csv_files,function(csv) {
       drop_na(datetime,temp,light) %>% # make sure we only have lines with complete data
       mutate(across(where(is.character),str_trim)) %>% # trim whitespace from character fields
       mutate(
-        logger = factor(str_c("logger_",logger_id)), # create a factor column with the logger ID
+        logger_id = factor(str_c("logger_",logger_id)), # create a factor column with the logger ID
+        logger_name = logger_name,
         datetime = parse_date_time( # make sure our datetime field is parsed correectly
           datetime,
           orders = c("m/d/y I:M:S p","m/d/y H:M:S"), 
@@ -70,24 +76,50 @@ loggers <- map_dfr(csv_files,function(csv) {
           # by setting tz="HST"
         )
       ) %>%
-      select(logger,datetime:light) # only get the fields we care about
+      select(logger_id,logger_name,datetime:light) # only get the fields we care about
   )
 })
 
 # now we cast the concatenated loggers to wide format
 # you'll get temp and light for each logger, and they'll be merged
 # by the datetime field and sorted chronologically
+
+# here you can choose to do it by logger ID or logger name
+# you do that with the names_from argument. just make sure
+# you get rid of the other id or name that you're not using
+# or else your results will be weird
+
+# using logger ID:
 loggers_wide <- loggers %>%
-  pivot_wider(names_from="logger",values_from=c("temp","light")) %>%
+  select(-logger_name) %>% # get rid of the logger_name field since we're not using it 
+  pivot_wider(names_from="logger_id",values_from=c("temp","light")) %>%
+  arrange(datetime)
+
+# using logger name:
+# here we use some clever magic to make the logger name go before the variable name
+# in order for the field to match the names you use in the plotting code
+# the names_glue argument controls this. I use str_to_sentence to capitalize the
+# first letter, since that's how you refer to them in the plotting code
+loggers_wide <- loggers %>%
+  select(-logger_id) %>% # get rid of the logger_id field since we're not using it 
+  pivot_wider(
+    names_from="logger_name",
+    values_from=c("temp","light"),
+    names_glue="{logger_name}.{str_to_sentence(.value)}"
+  ) %>%
   arrange(datetime)
 
 # save the wide format data as a csv
 # the datetime is saved in ISO8601 format with UTC timezone
 # so you'll have to deal with that when you load the file again
 # here's a whole huge article on ISO8601: https://en.wikipedia.org/wiki/ISO_8601
+# note that we're saving the version using the logger names so it'll just work in your
+# plotting code. (how many times can I say "plotting code" in these comments?)
 write_csv(loggers_wide,here::here("hobo loggers","output","logger_data.csv"))
 
-# here's how I would read it. There might be a simpler way but this is what I'd do:
+#### loading the data #####
+# Since you have a datetime field, timezones can be an issue. 
+# Here's how I would deal with reading this csv. There might be a simpler way but this is what I'd do:
 # logger_data <- read_csv(here::here("hobo loggers","output","logger_data.csv")) %>%
 #   mutate(datetime = with_tz(datetime,"HST"))
 
